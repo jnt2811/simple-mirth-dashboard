@@ -35,7 +35,10 @@ function requireAuth(req, res, next) {
 
 // Swagger UI
 // app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(mirthOpenApi));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(dcHl7GatewayOpenApi));
+app.get('/api-docs/openapi.json', (_req, res) => res.json(dcHl7GatewayOpenApi));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(dcHl7GatewayOpenApi, {
+  swaggerOptions: { url: '/api-docs/openapi.json' },
+}));
 
 
 // Routes
