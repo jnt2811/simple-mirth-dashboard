@@ -1,0 +1,311 @@
+<%- include('layout/header') %>
+
+<% if (error) { %>
+  <div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+  </div>
+<% } %>
+
+<!-- ===================== Section 1: ISN_BENH_NHAN ===================== -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0"><i class="bi bi-person-fill me-2 text-primary"></i>Bệnh nhân</h5>
+  <button
+    class="btn btn-primary btn-sm"
+    data-bs-toggle="modal"
+    data-bs-target="#modalBenhNhan"
+    onclick="openAddModal('benhNhan')"
+  >
+    <i class="bi bi-plus-lg me-1"></i>Thêm Mới
+  </button>
+</div>
+
+<div class="card shadow-sm mb-5">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <% columns1.forEach(col => { %>
+              <% if (col.COLUMN_NAME === 'SERVICE_ID') { %>
+                <th class="text-nowrap">Tên dịch vụ</th>
+              <% } else { %>
+                <th class="text-nowrap"><%= getLabel(col.COLUMN_NAME) %> <!-- <span class="fw-normal text-white-50 small">(<%= col.COLUMN_NAME %>)</span> --></th>
+              <% } %>
+            <% }) %>
+            <th class="text-center">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (rows1.length === 0) { %>
+            <tr>
+              <td colspan="<%= columns1.length + 1 %>" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-4 d-block mb-1"></i>Không có dữ liệu
+              </td>
+            </tr>
+          <% } %>
+          <% rows1.forEach(row => { %>
+            <tr>
+              <% columns1.forEach(col => { %>
+                <td>
+                  <% if (col.COLUMN_NAME === 'STATUS') { %>
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" disabled
+                        <%= (row[col.COLUMN_NAME] == 1 || row[col.COLUMN_NAME] === true) ? 'checked' : '' %> />
+                    </div>
+                  <% } else if (col.COLUMN_NAME === 'SERVICE_ID') { %>
+                    <%= row._SERVICE_NAME || row[col.COLUMN_NAME] || '' %>
+                  <% } else { %>
+                    <%= row[col.COLUMN_NAME] !== null && row[col.COLUMN_NAME] !== undefined ? row[col.COLUMN_NAME] : '' %>
+                  <% } %>
+                </td>
+              <% }) %>
+              <td class="text-center">
+                <button
+                  class="btn btn-outline-secondary btn-sm edit-btn"
+                  data-section="benhNhan"
+                  data-row="<%- encodeURIComponent(JSON.stringify(row)) %>"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalBenhNhan"
+                >
+                  <i class="bi bi-pencil me-1"></i>Sửa
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Section 2: ISN_LICH_KHAM ===================== -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0"><i class="bi bi-calendar2-week me-2 text-success"></i>Lịch khám</h5>
+  <button
+    class="btn btn-success btn-sm"
+    data-bs-toggle="modal"
+    data-bs-target="#modalLichKham"
+    onclick="openAddModal('lichKham')"
+  >
+    <i class="bi bi-plus-lg me-1"></i>Thêm Mới
+  </button>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <% columns2.forEach(col => { %>
+              <% if (col.COLUMN_NAME === 'SERVICE_ID') { %>
+                <th class="text-nowrap">Tên dịch vụ</th>
+              <% } else { %>
+                <th class="text-nowrap"><%= getLabel(col.COLUMN_NAME) %> <!-- <span class="fw-normal text-white-50 small">(<%= col.COLUMN_NAME %>)</span> --></th>
+              <% } %>
+            <% }) %>
+            <th class="text-center">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (rows2.length === 0) { %>
+            <tr>
+              <td colspan="<%= columns2.length + 1 %>" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-4 d-block mb-1"></i>Không có dữ liệu
+              </td>
+            </tr>
+          <% } %>
+          <% rows2.forEach(row => { %>
+            <tr>
+              <% columns2.forEach(col => { %>
+                <td>
+                  <% if (col.COLUMN_NAME === 'STATUS') { %>
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" disabled
+                        <%= (row[col.COLUMN_NAME] == 1 || row[col.COLUMN_NAME] === true) ? 'checked' : '' %> />
+                    </div>
+                  <% } else if (col.COLUMN_NAME === 'SERVICE_ID') { %>
+                    <%= row._SERVICE_NAME || row[col.COLUMN_NAME] || '' %>
+                  <% } else { %>
+                    <%= row[col.COLUMN_NAME] !== null && row[col.COLUMN_NAME] !== undefined ? row[col.COLUMN_NAME] : '' %>
+                  <% } %>
+                </td>
+              <% }) %>
+              <td class="text-center">
+                <button
+                  class="btn btn-outline-secondary btn-sm edit-btn"
+                  data-section="lichKham"
+                  data-row="<%- encodeURIComponent(JSON.stringify(row)) %>"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalLichKham"
+                >
+                  <i class="bi bi-pencil me-1"></i>Sửa
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Modal: Bệnh nhân ===================== -->
+<div class="modal fade" id="modalBenhNhan" tabindex="-1" aria-labelledby="modalBenhNhanLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalBenhNhanLabel">Bệnh nhân — Record</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formBenhNhan" method="POST">
+        <div class="modal-body">
+          <div id="fieldsBenhNhan" class="row g-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Modal: Lịch khám ===================== -->
+<div class="modal fade" id="modalLichKham" tabindex="-1" aria-labelledby="modalLichKhamLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalLichKhamLabel">Lịch khám — Record</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formLichKham" method="POST">
+        <div class="modal-body">
+          <div id="fieldsLichKham" class="row g-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-floppy me-1"></i>Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const COLS_BENH_NHAN = <%- JSON.stringify(columns1) %>;
+  const COLS_LICH_KHAM = <%- JSON.stringify(columns2) %>;
+  const ALL_COLS = [...COLS_BENH_NHAN, ...COLS_LICH_KHAM];
+  const COL_LABELS = <%- JSON.stringify(
+    Object.fromEntries([...columns1, ...columns2].map(c => [c.COLUMN_NAME, getLabel(c.COLUMN_NAME)]))
+  ) %>;
+  const TRUSTED_SERVICES = <%- JSON.stringify(trustedServices) %>;
+
+  const TABLE_MAP = {
+    benhNhan: { columns: COLS_BENH_NHAN, formId: 'formBenhNhan', fieldsId: 'fieldsBenhNhan', tableName: 'ISN_BENH_NHAN', labelId: 'modalBenhNhanLabel', sectionLabel: 'Bệnh nhân' },
+    lichKham: { columns: COLS_LICH_KHAM, formId: 'formLichKham', fieldsId: 'fieldsLichKham', tableName: 'ISN_LICH_KHAM', labelId: 'modalLichKhamLabel', sectionLabel: 'Lịch khám' },
+  };
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function buildFields(section, data) {
+    const cfg = TABLE_MAP[section];
+    const container = document.getElementById(cfg.fieldsId);
+    container.innerHTML = '';
+
+    cfg.columns.forEach(col => {
+      const name = col.COLUMN_NAME;
+      const isAutoInc = col.EXTRA === 'auto_increment';
+
+      if (isAutoInc) {
+        if (data && data[name] !== undefined) {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = name;
+          hidden.value = data[name];
+          container.appendChild(hidden);
+        }
+        return;
+      }
+
+      const isStatus = name === 'STATUS';
+      const isRequired = col.IS_NULLABLE === 'NO' && !isStatus;
+      const value = data ? (data[name] !== null && data[name] !== undefined ? data[name] : '') : '';
+      // const labelText = (COL_LABELS[name] || name) + ` (${name})`;
+      const labelText = (COL_LABELS[name] || name);
+
+      const colDiv = document.createElement('div');
+      colDiv.className = isStatus ? 'col-12' : 'col-md-6';
+
+      if (isStatus) {
+        const checked = data ? (data[name] == 1 || data[name] === true) : true;
+        colDiv.innerHTML = `
+          <div class="d-flex align-items-center gap-3 border rounded p-3 bg-light">
+            <label class="form-label mb-0 fw-semibold" for="field_${section}_${name}">${labelText}</label>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" role="switch"
+                id="field_${section}_${name}" name="${name}" value="1" ${checked ? 'checked' : ''} />
+            </div>
+            <span class="text-muted small" id="statusLabel_${section}_${name}">${checked ? 'Hoạt động' : 'Không hoạt động'}</span>
+          </div>`;
+        const toggle = colDiv.querySelector(`#field_${section}_${name}`);
+        const label = colDiv.querySelector(`#statusLabel_${section}_${name}`);
+        toggle.addEventListener('change', () => {
+          label.textContent = toggle.checked ? 'Hoạt động' : 'Không hoạt động';
+        });
+      } else if (name === 'SERVICE_ID') {
+        const options = TRUSTED_SERVICES.map(ts =>
+          `<option value="${ts.ID}" ${String(value) === String(ts.ID) ? 'selected' : ''}>${escapeHtml(ts.SERVICE_NAME)}</option>`
+        ).join('');
+        colDiv.innerHTML = `
+          <label class="form-label fw-semibold" for="field_${section}_${name}">
+            ${labelText}${isRequired ? ' <span class="text-danger">*</span>' : ''}
+          </label>
+          <select class="form-select" id="field_${section}_${name}" name="${name}" ${isRequired ? 'required' : ''}>
+            <option value="">-- Chọn dịch vụ --</option>
+            ${options}
+          </select>`;
+      } else {
+        colDiv.innerHTML = `
+          <label class="form-label fw-semibold" for="field_${section}_${name}">
+            ${labelText}${isRequired ? ' <span class="text-danger">*</span>' : ''}
+          </label>
+          <input type="text" class="form-control"
+            id="field_${section}_${name}" name="${name}"
+            value="${escapeHtml(String(value))}"
+            ${isRequired ? 'required' : ''} />`;
+      }
+      container.appendChild(colDiv);
+    });
+  }
+
+  function openAddModal(section) {
+    const cfg = TABLE_MAP[section];
+    document.getElementById(cfg.labelId).textContent = cfg.sectionLabel + ' — Thêm Mới';
+    document.getElementById(cfg.formId).action = `/endpoint-url/add/${cfg.tableName}`;
+    buildFields(section, null);
+  }
+
+  function openEditModal(section, rowData) {
+    const cfg = TABLE_MAP[section];
+    document.getElementById(cfg.labelId).textContent = cfg.sectionLabel + ' — Chỉnh Sửa';
+    document.getElementById(cfg.formId).action = `/endpoint-url/edit/${cfg.tableName}`;
+    buildFields(section, rowData);
+  }
+
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const section = this.dataset.section;
+      const rowData = JSON.parse(decodeURIComponent(this.dataset.row));
+      openEditModal(section, rowData);
+    });
+  });
+</script>
+
+<%- include('layout/footer') %>

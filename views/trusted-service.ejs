@@ -1,0 +1,209 @@
+<%- include('layout/header') %>
+
+<% if (error) { %>
+  <div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+  </div>
+<% } %>
+
+<!-- Topbar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-primary"></i>Dịch vụ tin cậy</h5>
+  <button
+    class="btn btn-primary btn-sm"
+    data-bs-toggle="modal"
+    data-bs-target="#recordModal"
+    onclick="openAddModal()"
+  >
+    <i class="bi bi-plus-lg me-1"></i>Thêm Mới
+  </button>
+</div>
+
+<!-- Table -->
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered mb-0 align-middle">
+        <thead class="table-dark">
+          <tr>
+            <% columns.forEach(col => { %>
+              <th class="text-nowrap"><%= getLabel(col.COLUMN_NAME) %> <!-- <span class="fw-normal text-white-50 small">(<%= col.COLUMN_NAME %>)</span> --></th>
+            <% }) %>
+            <th class="text-center">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (rows.length === 0) { %>
+            <tr>
+              <td colspan="<%= columns.length + 1 %>" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-4 d-block mb-1"></i>Không có dữ liệu
+              </td>
+            </tr>
+          <% } %>
+          <% rows.forEach(row => { %>
+            <tr>
+              <% columns.forEach(col => { %>
+                <td>
+                  <% if (col.COLUMN_NAME === 'STATUS') { %>
+                    <div class="form-check form-switch mb-0">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        disabled
+                        <%= (row[col.COLUMN_NAME] == 1 || row[col.COLUMN_NAME] === true) ? 'checked' : '' %>
+                      />
+                    </div>
+                  <% } else { %>
+                    <%= row[col.COLUMN_NAME] !== null && row[col.COLUMN_NAME] !== undefined ? row[col.COLUMN_NAME] : '' %>
+                  <% } %>
+                </td>
+              <% }) %>
+              <td class="text-center">
+                <button
+                  class="btn btn-outline-secondary btn-sm edit-btn"
+                  data-row="<%- encodeURIComponent(JSON.stringify(row)) %>"
+                  data-bs-toggle="modal"
+                  data-bs-target="#recordModal"
+                >
+                  <i class="bi bi-pencil me-1"></i>Sửa
+                </button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal fade" id="recordModal" tabindex="-1" aria-labelledby="recordModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="recordModalLabel">Record</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="recordForm" method="POST">
+        <div class="modal-body">
+          <div id="formFields" class="row g-3">
+            <!-- Fields injected by JS -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i>Lưu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const COLUMNS = <%- JSON.stringify(columns) %>;
+  const COL_LABELS = <%- JSON.stringify(Object.fromEntries(columns.map(c => [c.COLUMN_NAME, getLabel(c.COLUMN_NAME)]))) %>;
+
+  function buildFormFields(data) {
+    const container = document.getElementById('formFields');
+    container.innerHTML = '';
+
+    COLUMNS.forEach(col => {
+      const name = col.COLUMN_NAME;
+      const isAutoInc = col.EXTRA === 'auto_increment';
+      const isPK = col.COLUMN_KEY === 'PRI';
+
+      if (isAutoInc) {
+        // Hidden PK for edit
+        if (data && data[name] !== undefined) {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = name;
+          hidden.value = data[name];
+          container.appendChild(hidden);
+        }
+        return;
+      }
+
+      const isStatus = name === 'STATUS';
+      const isRequired = col.IS_NULLABLE === 'NO' && !isStatus;
+      const value = data ? (data[name] !== null && data[name] !== undefined ? data[name] : '') : '';
+
+      const colDiv = document.createElement('div');
+      colDiv.className = isStatus ? 'col-12' : 'col-md-6';
+
+      // const labelText = (COL_LABELS[name] || name) + ` (${name})`;
+      const labelText = (COL_LABELS[name] || name);
+
+      if (isStatus) {
+        const checked = data ? (data[name] == 1 || data[name] === true) : true;
+        colDiv.innerHTML = `
+          <div class="d-flex align-items-center gap-3 border rounded p-3 bg-light">
+            <label class="form-label mb-0 fw-semibold" for="field_${name}">${labelText}</label>
+            <div class="form-check form-switch mb-0">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="field_${name}"
+                name="${name}"
+                value="1"
+                ${checked ? 'checked' : ''}
+              />
+            </div>
+            <span class="text-muted small" id="statusLabel_${name}">${checked ? 'Hoạt động' : 'Không hoạt động'}</span>
+          </div>`;
+        const toggle = colDiv.querySelector(`#field_${name}`);
+        const label = colDiv.querySelector(`#statusLabel_${name}`);
+        toggle.addEventListener('change', () => {
+          label.textContent = toggle.checked ? 'Hoạt động' : 'Không hoạt động';
+        });
+      } else {
+        colDiv.innerHTML = `
+          <label class="form-label fw-semibold" for="field_${name}">
+            ${labelText}${isRequired ? ' <span class="text-danger">*</span>' : ''}
+          </label>
+          <input
+            type="text"
+            class="form-control"
+            id="field_${name}"
+            name="${name}"
+            value="${escapeHtml(String(value))}"
+            ${isRequired ? 'required' : ''}
+          />`;
+      }
+
+      container.appendChild(colDiv);
+    });
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function openAddModal() {
+    document.getElementById('recordModalLabel').textContent = 'Thêm Mới Bản Ghi';
+    document.getElementById('recordForm').action = '/trusted-service/add';
+    buildFormFields(null);
+  }
+
+  function openEditModal(rowData) {
+    document.getElementById('recordModalLabel').textContent = 'Chỉnh Sửa Bản Ghi';
+    document.getElementById('recordForm').action = '/trusted-service/edit';
+    buildFormFields(rowData);
+  }
+
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const rowData = JSON.parse(decodeURIComponent(this.dataset.row));
+      openEditModal(rowData);
+    });
+  });
+</script>
+
+<%- include('layout/footer') %>

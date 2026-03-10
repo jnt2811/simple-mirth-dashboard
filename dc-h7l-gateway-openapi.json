@@ -1,0 +1,237 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "dc-h7l-gateway API",
+    "description": "HTTP HL7 v2 Gateway channel running on port 9000. Accepts raw HL7 v2 messages via HTTP POST and routes them internally based on the MSH-9 message type field.\n\n**Routing logic:**\n- `MSH-9 = ADT` → forwarded to `dc-gw-adt-patient-sync` channel\n- `MSH-9 = SIU` → forwarded to `dc-gw-siu-appointment-sync` channel\n\nAll messages are also logged by `dc-hl7-gateway-logger`.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://10.8.0.184:9000",
+      "description": "Mirth Connect HL7 Gateway (dc-h7l-gateway)"
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "summary": "Send HL7 v2 message",
+        "description": "Accepts a raw HL7 v2 message. The channel reads `MSH-9` (message type) to route the message to the appropriate downstream channel.\n\n| MSH-9 | Routed to |\n|-------|----------|\n| `ADT` | `dc-gw-adt-patient-sync` |\n| `SIU` | `dc-gw-siu-appointment-sync` |\n\nMessages that do not match any filter pass through to the logger only.",
+        "operationId": "sendHl7Message",
+        "tags": ["HL7 Gateway"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "description": "Raw HL7 v2 message. Segments separated by CR (\\r). Must begin with MSH segment."
+              },
+              "examples": {
+                "ADT_A01_Admit": {
+                  "summary": "ADT^A01 - Patient Admit",
+                  "description": "Patient admission message. Routed to dc-gw-adt-patient-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240101120000||ADT^A01|MSG001|P|2.5\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M|||123 Tran Hung Dao^^HCM|||0901234567\rPV1|1|I|CARDIO^101^A|||DR001^Smith^John||||||||||ADT|20240101110000"
+                },
+                "ADT_A02_Transfer": {
+                  "summary": "ADT^A02 - Patient Transfer",
+                  "description": "Patient transfer between wards. Routed to dc-gw-adt-patient-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240101130000||ADT^A02|MSG002|P|2.5\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M\rPV1|1|I|ICU^201^B|||DR001^Smith^John||||||||||ADT|20240101130000"
+                },
+                "ADT_A03_Discharge": {
+                  "summary": "ADT^A03 - Patient Discharge",
+                  "description": "Patient discharge. Routed to dc-gw-adt-patient-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240101180000||ADT^A03|MSG003|P|2.5\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M\rPV1|1|O|CARDIO^101^A|||DR001^Smith^John||||||||||||20240101180000"
+                },
+                "ADT_A08_Update": {
+                  "summary": "ADT^A08 - Update Patient Info",
+                  "description": "Update patient demographics. Routed to dc-gw-adt-patient-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240101090000||ADT^A08|MSG004|P|2.5\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M|||456 Le Loi^^HCM|||0909999999"
+                },
+                "SIU_S12_NewAppointment": {
+                  "summary": "SIU^S12 - New Appointment",
+                  "description": "Schedule a new appointment. Routed to dc-gw-siu-appointment-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240101100000||SIU^S12|MSG005|P|2.5\rSCH|APT001||||||CONSULT^Consultation|60|MIN|||||DR001^Smith^John\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M\rPV1|1|O|CARDIO^101^A|||DR001^Smith^John\rAIL|1|||20240110090000|20240110100000"
+                },
+                "SIU_S13_Reschedule": {
+                  "summary": "SIU^S13 - Reschedule Appointment",
+                  "description": "Reschedule an existing appointment. Routed to dc-gw-siu-appointment-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240102100000||SIU^S13|MSG006|P|2.5\rSCH|APT001||||||CONSULT^Consultation|60|MIN\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M\rAIL|1|||20240115090000|20240115100000"
+                },
+                "SIU_S15_Cancel": {
+                  "summary": "SIU^S15 - Cancel Appointment",
+                  "description": "Cancel an existing appointment. Routed to dc-gw-siu-appointment-sync.",
+                  "value": "MSH|^~\\&|HIS|HOSPITAL|MIRTH|GATEWAY|20240103100000||SIU^S15|MSG007|P|2.5\rSCH|APT001\rPID|1||P12345^^^MRN^MR||Nguyen^Van^An||19900101|M"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message received and accepted by the channel. Note: response is sent **before** processing completes (`respondAfterProcessing = false`).",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Hl7AdtMessage": {
+        "type": "object",
+        "description": "Parsed fields from an ADT HL7 v2 message (for reference only — actual body is raw HL7 text)",
+        "properties": {
+          "MSH-9": {
+            "type": "string",
+            "description": "Message type. Must be 'ADT' for this route.",
+            "example": "ADT^A01"
+          },
+          "MSH-7": {
+            "type": "string",
+            "description": "Message timestamp (yyyyMMddHHmmss)",
+            "example": "20240101120000"
+          },
+          "MSH-10": {
+            "type": "string",
+            "description": "Message control ID (unique per message)",
+            "example": "MSG001"
+          },
+          "MSH-3": {
+            "type": "string",
+            "description": "Sending application",
+            "example": "HIS"
+          },
+          "MSH-4": {
+            "type": "string",
+            "description": "Sending facility",
+            "example": "HOSPITAL"
+          },
+          "PID-3": {
+            "type": "string",
+            "description": "Patient identifier (MRN)",
+            "example": "P12345^^^MRN^MR"
+          },
+          "PID-5": {
+            "type": "string",
+            "description": "Patient name (LastName^FirstName^MiddleName)",
+            "example": "Nguyen^Van^An"
+          },
+          "PID-7": {
+            "type": "string",
+            "description": "Date of birth (yyyyMMdd)",
+            "example": "19900101"
+          },
+          "PID-8": {
+            "type": "string",
+            "description": "Gender (M/F)",
+            "example": "M"
+          },
+          "PID-11": {
+            "type": "string",
+            "description": "Address",
+            "example": "123 Tran Hung Dao^^HCM"
+          },
+          "PID-13": {
+            "type": "string",
+            "description": "Phone number",
+            "example": "0901234567"
+          },
+          "PV1-2": {
+            "type": "string",
+            "description": "Patient class (I=Inpatient, O=Outpatient, E=Emergency)",
+            "example": "I"
+          },
+          "PV1-3": {
+            "type": "string",
+            "description": "Assigned location (Ward^Room^Bed)",
+            "example": "CARDIO^101^A"
+          },
+          "PV1-7": {
+            "type": "string",
+            "description": "Attending doctor (ID^LastName^FirstName)",
+            "example": "DR001^Smith^John"
+          },
+          "PV1-44": {
+            "type": "string",
+            "description": "Admit datetime (yyyyMMddHHmmss)",
+            "example": "20240101110000"
+          }
+        }
+      },
+      "Hl7SiuMessage": {
+        "type": "object",
+        "description": "Parsed fields from a SIU HL7 v2 message (for reference only — actual body is raw HL7 text)",
+        "properties": {
+          "MSH-9": {
+            "type": "string",
+            "description": "Message type. Must be 'SIU' for this route.",
+            "example": "SIU^S12"
+          },
+          "MSH-10": {
+            "type": "string",
+            "description": "Message control ID",
+            "example": "MSG005"
+          },
+          "SCH-2": {
+            "type": "string",
+            "description": "Appointment ID",
+            "example": "APT001"
+          },
+          "SCH-7": {
+            "type": "string",
+            "description": "Appointment type (Code^Description)",
+            "example": "CONSULT^Consultation"
+          },
+          "SCH-9": {
+            "type": "string",
+            "description": "Appointment duration (numeric)",
+            "example": "60"
+          },
+          "SCH-11": {
+            "type": "string",
+            "description": "Appointment start datetime (yyyyMMddHHmmss)",
+            "example": "20240110090000"
+          },
+          "SCH-12": {
+            "type": "string",
+            "description": "Appointment end datetime (yyyyMMddHHmmss)",
+            "example": "20240110100000"
+          },
+          "PID-3": {
+            "type": "string",
+            "description": "Patient ID (MRN)",
+            "example": "P12345"
+          },
+          "PID-5": {
+            "type": "string",
+            "description": "Patient name (LastName^FirstName)",
+            "example": "Nguyen^Van^An"
+          },
+          "PV1-3": {
+            "type": "string",
+            "description": "Ward/location",
+            "example": "CARDIO"
+          },
+          "PV1-7": {
+            "type": "string",
+            "description": "Doctor ID",
+            "example": "DR001"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "HL7 Gateway",
+      "description": "Single HTTP endpoint accepting raw HL7 v2 messages. Routes internally by message type (MSH-9)."
+    }
+  ]
+}
