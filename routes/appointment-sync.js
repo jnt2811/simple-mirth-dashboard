@@ -1,14 +1,14 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const db = require('../db');
-const { getLabel } = require('../utils/colLabels');
+const db = require("../db");
+const { getLabel } = require("../utils/colLabels");
 
-const TABLE = 'appointment_sync_siu';
+const TABLE = "appointment_sync_siu";
 
 const PAGE_SIZE = 20;
 
 // GET /appointment-sync
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const offset = (page - 1) * PAGE_SIZE;
@@ -18,15 +18,20 @@ router.get('/', async (req, res) => {
        FROM INFORMATION_SCHEMA.COLUMNS
        WHERE TABLE_SCHEMA = 'mirth_meta_data' AND TABLE_NAME = ?
        ORDER BY ORDINAL_POSITION`,
-      [TABLE]
+      [TABLE],
     );
-    const [[{ total }]] = await db.query(`SELECT COUNT(*) AS total FROM \`${TABLE}\``);
-    const [rows] = await db.query(`SELECT * FROM \`${TABLE}\` LIMIT ? OFFSET ?`, [PAGE_SIZE, offset]);
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total FROM \`${TABLE}\``,
+    );
+    const [rows] = await db.query(
+      `SELECT * FROM \`${TABLE}\` order by created_at DESC LIMIT ? OFFSET ?`,
+      [PAGE_SIZE, offset],
+    );
     const totalPages = Math.ceil(total / PAGE_SIZE);
 
-    res.render('appointment-sync', {
-      title: 'Lịch Khám',
-      currentPath: '/appointment-sync',
+    res.render("appointment-sync", {
+      title: "Lịch Khám",
+      currentPath: "/appointment-sync",
       columns,
       rows,
       page,
@@ -37,9 +42,9 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.render('appointment-sync', {
-      title: 'Lịch Khám',
-      currentPath: '/appointment-sync',
+    res.render("appointment-sync", {
+      title: "Lịch Khám",
+      currentPath: "/appointment-sync",
       columns: [],
       rows: [],
       page: 1,
